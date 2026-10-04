@@ -1417,24 +1417,39 @@
       });
     }
 
+    // Mémorise la dernière fiche ouverte pour y revenir depuis « Retour à la boutique »
+    let curView = 'shop', lastViewedId = null;
+
     function render(resetScroll) {
       const h = location.hash;
+      const prevView = curView;
       let m;
       if (!h.startsWith('#/legal/')) document.title = PAGE_TITLE;
       if ((m = h.match(/^#\/product\/(\d+)$/)) && byId(Number(m[1]))) {
         showView('product');
+        curView = 'product';
+        lastViewedId = Number(m[1]);
         renderProduct(byId(Number(m[1])));
       } else if ((m = h.match(/^#\/legal\/(cgv|licence|mentions|confidentialite)$/))) {
         showView('legal');
+        curView = 'legal';
         renderLegal(m[1]);
       } else if (h === '#/cart') {
         showView('cart');
+        curView = 'cart';
         renderCart();
       } else {
         showView('shop');
+        curView = 'shop';
         renderProducts();
       }
-      if (resetScroll) window.scrollTo(0, 0);
+      if (resetScroll) {
+        // Retour de la fiche vers la boutique : on se replace sur la carte de cet item
+        const card = (curView === 'shop' && prevView === 'product' && lastViewedId != null)
+          ? document.getElementById('card-' + lastViewedId) : null;
+        if (card) card.scrollIntoView({ block: 'center' });
+        else window.scrollTo(0, 0);
+      }
     }
 
     // ===== Menu burger : tous les items regroupés par année =====
@@ -1508,7 +1523,7 @@
       grid.innerHTML = products.map(p => {
         const t = p[currentLang];
         return `
-          <article class="product-card clickable${soldOut(p) ? ' sold' : ''}" tabindex="0" role="link"
+          <article id="card-${p.id}" class="product-card clickable${soldOut(p) ? ' sold' : ''}" tabindex="0" role="link"
                    aria-label="${t.name}"
                    onclick="openProduct(${p.id})"
                    onkeydown="if(event.key==='Enter'&&event.target===this)openProduct(${p.id})">

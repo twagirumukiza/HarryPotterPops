@@ -657,7 +657,7 @@
     <div class="header-inner">
       <div class="head-left">
         <button class="burger" id="burgerBtn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="drawer" onclick="toggleMenu()"><span></span><span></span><span></span></button>
-        <a href="#/" class="logo">
+        <a href="#/" class="logo" id="logoHome" title="Accueil" onclick="goHome(event)">
           <div class="logo-icon">⚡</div>
           <div>
             <div class="logo-text">HarryPotterPops</div>
@@ -1556,6 +1556,22 @@
     }
 
     // ===== Router (hash based: #/  #/product/N  #/cart) =====
+    function goHome(e) {
+      if (e) e.preventDefault();
+      closeMenu && closeMenu();
+      // Force retour en haut de la boutique (pas sur la dernière carte vue)
+      lastViewedId = null;
+      if (location.hash === '#/' || location.hash === '' || location.hash === '#') {
+        showView('shop');
+        curView = 'shop';
+        renderProducts();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        location.hash = '#/';
+        // scroll after hashchange render
+        setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
+      }
+    }
     function openProduct(id) { location.hash = '#/product/' + id; }
 
     function showView(name) {

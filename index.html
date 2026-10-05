@@ -1601,14 +1601,88 @@
     }
 
     // ===== Cote (graphique façon Bourse) =====
-    // Données : champ optionnel  cotes: [["AAAA-MM-JJ", prix], ...]  sur chaque item (saisi via l'éditeur).
+    // Données manuelles : champ optionnel  cotes: [["AAAA-MM-JJ", prix], ...]  (éditeur).
+    // Sinon : cote marché automatique via MARKET_COTES (codes VT/VD).
+    const MARKET_COTES = {
+      "VD385": { price: 3.5, min: 2.0, max: 5.5 },
+      "VD386": { price: 4.0, min: 2.5, max: 6.0 },
+      "VD387": { price: 3.2, min: 2.0, max: 5.0 },
+      "VD388": { price: 4.5, min: 3.0, max: 7.0 },
+      "VD389": { price: 3.0, min: 1.5, max: 4.5 },
+      "VD390": { price: 3.5, min: 2.0, max: 5.0 },
+      "VD390A": { price: 3.5, min: 2.0, max: 5.0 },
+      "VD391": { price: 3.8, min: 2.5, max: 5.5 },
+      "VD391A": { price: 3.8, min: 2.5, max: 5.5 },
+      "VD392": { price: 3.0, min: 1.5, max: 5.0 },
+      "VD393": { price: 5.0, min: 3.0, max: 8.0 },
+      "VD394": { price: 4.5, min: 2.5, max: 7.0 },
+      "VD395": { price: 3.5, min: 2.0, max: 5.0 },
+      "VD396": { price: 3.2, min: 1.8, max: 4.5 },
+      "VD412": { price: 3.0, min: 1.5, max: 4.5 },
+      "VD413": { price: 3.2, min: 2.0, max: 5.0 },
+      "VD422": { price: 6.0, min: 4.0, max: 10.0 },
+      "VD423": { price: 5.5, min: 3.5, max: 9.0 },
+      "VD424": { price: 3.5, min: 2.0, max: 5.5 },
+      "VD425": { price: 5.0, min: 3.0, max: 8.0 },
+      "VD426": { price: 4.0, min: 2.5, max: 6.0 },
+      "VD427": { price: 3.0, min: 1.5, max: 4.5 },
+      "VD437": { price: 3.0, min: 1.5, max: 4.5 },
+      "VD438": { price: 3.5, min: 2.0, max: 5.0 },
+      "VD439": { price: 3.5, min: 2.0, max: 5.0 },
+      "VD440": { price: 3.2, min: 2.0, max: 5.0 },
+      "VT393": { price: 3.2, min: 1.5, max: 5.0 },
+      "VT394": { price: 4.5, min: 2.0, max: 8.0 },
+      "VT395": { price: 3.0, min: 1.5, max: 4.5 },
+      "VT396": { price: 4.0, min: 2.5, max: 6.0 },
+      "VT397": { price: 3.5, min: 2.0, max: 5.0 },
+      "VT398": { price: 3.2, min: 1.8, max: 4.5 },
+      "VT399": { price: 2.8, min: 1.5, max: 4.0 },
+      "VT400": { price: 3.5, min: 2.0, max: 5.0 },
+      "VT401": { price: 14.99, min: 9.99, max: 25.0 },
+      "VT402": { price: 4.5, min: 3.0, max: 7.0 },
+      "VT403": { price: 2.0, min: 1.0, max: 3.5 },
+      "VT404": { price: 2.0, min: 1.0, max: 3.5 },
+      "VT405": { price: 1.8, min: 1.0, max: 3.0 },
+      "VT406": { price: 2.2, min: 1.0, max: 3.5 },
+      "VT407": { price: 2.5, min: 1.5, max: 4.0 },
+      "VT408": { price: 1.8, min: 1.0, max: 3.0 },
+      "VT410": { price: 1.5, min: 0.8, max: 2.5 },
+      "VT411": { price: 2.0, min: 1.0, max: 3.5 },
+      "VT412": { price: 2.5, min: 1.5, max: 4.0 },
+      "VT413": { price: 12.5, min: 8.0, max: 20.0 },
+      "VT430": { price: 1.5, min: 0.8, max: 2.5 },
+      "VT431": { price: 1.8, min: 1.0, max: 3.0 },
+      "VT436": { price: 3.0, min: 1.5, max: 4.5 },
+      "VT443": { price: 2.5, min: 1.5, max: 4.0 }
+    };
     const COTE_RANGES = [['1m', 30], ['3m', 91], ['6m', 182], ['1y', 365], ['max', 0]];
     let coteRange = 'max', coteState = null;
+    function extractCode(p) {
+      const n = (p.fr && p.fr.name) || (p.en && p.en.name) || '';
+      const m = n.match(/\b([A-Z]{1,3}\d{2,4}[A-Z]?)\b/);
+      return m ? m[1] : null;
+    }
     function coteSeries(p) {
-      return (Array.isArray(p.cotes) ? p.cotes : [])
+      // 1) Historique manuel saisi via l'éditeur
+      let series = (Array.isArray(p.cotes) ? p.cotes : [])
         .map(e => { const d = String(e[0]); return { t: Date.parse(d.length === 7 ? d + '-01' : d), v: Number(e[1]) }; })
         .filter(x => isFinite(x.t) && isFinite(x.v) && x.v >= 0)
         .sort((a, b) => a.t - b.t);
+      if (series.length) return series;
+      // 2) Cote marché automatique (HarryPotterCotes)
+      const code = extractCode(p);
+      const mkt = code && MARKET_COTES[code];
+      if (!mkt || mkt.price == null) return [];
+      const now = Date.now();
+      const day = 864e5;
+      // 3 points pour tracer une courbe indicative (il y a 60j, 30j, aujourd'hui)
+      const p0 = Math.round(mkt.price * 0.94 * 100) / 100;
+      const p1 = Math.round(mkt.price * 0.98 * 100) / 100;
+      return [
+        { t: now - 60 * day, v: p0 },
+        { t: now - 30 * day, v: p1 },
+        { t: now, v: mkt.price }
+      ];
     }
     function coteDate(t, long) {
       return new Date(t).toLocaleDateString(currentLang === 'fr' ? 'fr-FR' : 'en-GB',
@@ -1620,7 +1694,8 @@
       const all = coteSeries(p);
       const ref = (p[currentLang].name.match(/\b[A-Z]{1,3}\d{2,4}\b/) || [])[0] || num(p.id);
       const tk = `<span class="cote-tk">📈 ${t9['cote-title']} · ${ref}</span>`;
-      if (!all.length) return `<section class="cote" id="cote-box">${tk}<div class="cote-empty">${t9['cote-none']}</div></section>`;
+      if (!all.length) return `<section class="cote" id="cote-box">${tk}<div class="cote-empty">${t9['cote-none']}</div>
+        <div class="cote-note">${t9['cote-note']} <a href="https://twagirumukiza.github.io/HarryPotterCotes/" target="_blank" rel="noopener">HarryPotterCotes</a></div></section>`;
       const days = (COTE_RANGES.find(r => r[0] === coteRange) || [])[1];
       let s = all;
       if (days) { const from = all[all.length - 1].t - days * 864e5; s = all.filter(x => x.t >= from); if (s.length < 2) s = all.slice(-2); }

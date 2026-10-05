@@ -396,6 +396,28 @@
     }
     .btn-angles:hover { background: var(--accent); color: var(--on-accent); transform: translateY(-2px); }
 
+
+    /* ===== Cote (graphique façon Bourse) – fiche « Voir angles » uniquement ===== */
+    .cote{margin-top:1.5rem;background:#0e1118;color:#e6e9f0;border:2px solid var(--border);border-radius:14px;padding:1rem 1.1rem;box-shadow:var(--shadow);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .cote-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;flex-wrap:wrap}
+    .cote-tk{font-size:.78rem;letter-spacing:.08em;color:#8b93a7;font-weight:700}
+    .cote-px{font-size:1.9rem;font-weight:800;line-height:1.1;margin-top:.15rem}
+    .cote-chg{font-size:.9rem;font-weight:700;margin-top:.15rem}
+    .cote .up{color:#2ecc71}.cote .down{color:#ff5c5c}.cote .flat{color:#8b93a7}
+    .cote-rgs{display:flex;gap:.25rem;flex-wrap:wrap}
+    .cote-rg{background:transparent;color:#8b93a7;border:1px solid #2a3142;border-radius:6px;padding:.25rem .55rem;font:inherit;font-size:.75rem;font-weight:700;cursor:pointer}
+    .cote-rg:hover{color:#fff}
+    .cote-rg.on{background:#1d2535;color:#fff;border-color:#3b4660}
+    .cote-chart{position:relative;margin-top:.6rem}
+    .cote-chart svg{display:block;width:100%;height:auto;touch-action:pan-y;cursor:crosshair}
+    .cote-tip{position:absolute;top:4px;transform:translateX(-50%);background:#1d2535;border:1px solid #3b4660;border-radius:8px;padding:.25rem .55rem;font-size:.75rem;pointer-events:none;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:.05rem}
+    .cote-tip[hidden]{display:none}
+    .cote-stats{display:flex;gap:1.2rem;flex-wrap:wrap;margin-top:.5rem;font-size:.75rem;color:#8b93a7}
+    .cote-stats b{color:#e6e9f0;font-weight:700;margin-left:.3rem}
+    .cote-note{margin-top:.5rem;font-size:.68rem;color:#6b7387;line-height:1.4}
+    .cote-note a{color:#9db4ff}
+    .cote-empty{padding:1.2rem 0;color:#8b93a7;font-size:.85rem;text-align:center}
+
     /* ===== Product (angles) view ===== */
     .btn-back {
       background: var(--bg-card);
@@ -1253,6 +1275,7 @@
         add: "Add to my trunk",
         toast: "🪄 Added to my trunk!",
         "view-angles": "View angles",
+        "cote-title": "Market value", "cote-none": "Market value not available yet.", "cote-1m": "1M", "cote-3m": "3M", "cote-6m": "6M", "cote-1y": "1Y", "cote-max": "MAX", "cote-low": "Low", "cote-high": "High", "cote-upd": "Updated", "cote-one": "Only one reading so far – the chart will appear with the next update.", "cote-note": "Indicative estimate of the secondary market, not an offer. Source:",
         "menu-title": "Menu", "menu-home": "🏠 Home", "menu-noyear": "Year not specified", "menu-close": "Close menu", "menu-open": "Menu", "foot-cgv": "Terms of Sale", "foot-lic": "Licence of use", "foot-men": "Legal notice", "foot-rgpd": "Privacy (GDPR)", "foot-copy": "© 2026 Twagirumukiza – All rights reserved. Design and original photographs: any reproduction is prohibited without written permission. Sharing links to the site is free and welcome.", "legal-title-cgv": "Terms of Sale (T&Cs)", "legal-title-licence": "Licence of use & copyright", "legal-title-mentions": "Legal notice", "legal-title-confidentialite": "Privacy policy (GDPR)",
         back: "← Shop",
         "cart-title": "Your cart",
@@ -1288,6 +1311,7 @@
         add: "Ajouter à ma malle",
         toast: "🪄 Ajouté à ma malle !",
         "view-angles": "Voir angles",
+        "cote-title": "Cote", "cote-none": "Cote pas encore disponible.", "cote-1m": "1M", "cote-3m": "3M", "cote-6m": "6M", "cote-1y": "1A", "cote-max": "MAX", "cote-low": "Plus bas", "cote-high": "Plus haut", "cote-upd": "MAJ", "cote-one": "Un seul relevé pour l'instant – le graphique apparaîtra à la prochaine mise à jour.", "cote-note": "Estimation indicative du marché secondaire, ce n'est pas une offre. Source :",
         "menu-title": "Menu", "menu-home": "🏠 Accueil", "menu-noyear": "Année non précisée", "menu-close": "Fermer le menu", "menu-open": "Menu", "foot-cgv": "CGV", "foot-lic": "Licence d'utilisation", "foot-men": "Mentions légales", "foot-rgpd": "Confidentialité (RGPD)", "foot-copy": "© 2026 Twagirumukiza – Tous droits réservés. Design et photographies originales : toute reproduction est interdite sans autorisation écrite. Le partage des liens du site est libre et bienvenu.", "legal-title-cgv": "Conditions Générales de Vente (CGV)", "legal-title-licence": "Licence d'utilisation & propriété intellectuelle", "legal-title-mentions": "Mentions légales", "legal-title-confidentialite": "Politique de confidentialité (RGPD)",
         back: "← Boutique",
         "cart-title": "Ton panier",
@@ -1576,6 +1600,98 @@
       return `background-image:url('images/${key}.jpg');background-size:${GRID.cols * 100}% ${GRID.rows * 100}%;background-position:${x}% ${y}%`;
     }
 
+    // ===== Cote (graphique façon Bourse) =====
+    // Données : champ optionnel  cotes: [["AAAA-MM-JJ", prix], ...]  sur chaque item (saisi via l'éditeur).
+    const COTE_RANGES = [['1m', 30], ['3m', 91], ['6m', 182], ['1y', 365], ['max', 0]];
+    let coteRange = 'max', coteState = null;
+    function coteSeries(p) {
+      return (Array.isArray(p.cotes) ? p.cotes : [])
+        .map(e => { const d = String(e[0]); return { t: Date.parse(d.length === 7 ? d + '-01' : d), v: Number(e[1]) }; })
+        .filter(x => isFinite(x.t) && isFinite(x.v) && x.v >= 0)
+        .sort((a, b) => a.t - b.t);
+    }
+    function coteDate(t, long) {
+      return new Date(t).toLocaleDateString(currentLang === 'fr' ? 'fr-FR' : 'en-GB',
+        long ? { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' } : { month: 'short', year: '2-digit', timeZone: 'UTC' });
+    }
+    function coteNum(n, d) { const t = n.toFixed(d); return currentLang === 'fr' ? t.replace('.', ',') : t; }
+    function coteBox(p) {
+      const t9 = i18n[currentLang];
+      const all = coteSeries(p);
+      const ref = (p[currentLang].name.match(/\b[A-Z]{1,3}\d{2,4}\b/) || [])[0] || num(p.id);
+      const tk = `<span class="cote-tk">📈 ${t9['cote-title']} · ${ref}</span>`;
+      if (!all.length) return `<section class="cote" id="cote-box">${tk}<div class="cote-empty">${t9['cote-none']}</div></section>`;
+      const days = (COTE_RANGES.find(r => r[0] === coteRange) || [])[1];
+      let s = all;
+      if (days) { const from = all[all.length - 1].t - days * 864e5; s = all.filter(x => x.t >= from); if (s.length < 2) s = all.slice(-2); }
+      const last = s[s.length - 1], first = s[0];
+      const chg = last.v - first.v, pct = first.v ? chg / first.v * 100 : 0;
+      const cls = s.length < 2 || chg === 0 ? 'flat' : chg > 0 ? 'up' : 'down';
+      const col = cls === 'down' ? '#ff5c5c' : cls === 'up' ? '#2ecc71' : '#8b93a7';
+      const arrow = cls === 'up' ? '▲' : cls === 'down' ? '▼' : '■';
+      const sign = chg > 0 ? '+' : chg < 0 ? '−' : '';
+      const head = `<div class="cote-top"><div>${tk}<div class="cote-px">${money(last.v)}</div>
+          <div class="cote-chg ${cls}">${s.length < 2 ? '' : `${arrow} ${sign}${coteNum(Math.abs(chg), 2)} € (${sign}${coteNum(Math.abs(pct), 1)} %)`}</div></div>
+          <div class="cote-rgs">${COTE_RANGES.map(r => `<button class="cote-rg${r[0] === coteRange ? ' on' : ''}" onclick="setCoteRange(${p.id},'${r[0]}')">${t9['cote-' + r[0]]}</button>`).join('')}</div></div>`;
+      const note = `<div class="cote-note">${t9['cote-note']} <a href="https://twagirumukiza.github.io/HarryPotterCotes/" target="_blank" rel="noopener">HarryPotterCotes</a></div>`;
+      if (s.length < 2) return `<section class="cote" id="cote-box">${head}<div class="cote-empty">${t9['cote-one']}</div>${note}</section>`;
+      const W = 640, H = 240, L = 10, R = 64, T = 14, B = 26, pw = W - L - R, ph = H - T - B;
+      const t0 = s[0].t, t1 = last.t;
+      let lo = Math.min(...s.map(x => x.v)), hi = Math.max(...s.map(x => x.v));
+      const sMin = lo, sMax = hi;
+      const pad = (hi - lo) * 0.14 || Math.max(hi * 0.1, 0.5);
+      lo = Math.max(0, lo - pad); hi = hi + pad;
+      const X = t => L + (t - t0) / (t1 - t0 || 1) * pw;
+      const Y = v => T + (1 - (v - lo) / (hi - lo)) * ph;
+      const pts = s.map(x => ({ x: X(x.t), y: Y(x.v), t: x.t, v: x.v }));
+      coteState = { pts, W };
+      const line = pts.map((q, i) => (i ? 'L' : 'M') + q.x.toFixed(1) + ',' + q.y.toFixed(1)).join(' ');
+      const area = line + ` L${pts[pts.length - 1].x.toFixed(1)},${H - B} L${pts[0].x.toFixed(1)},${H - B} Z`;
+      let grid = '';
+      for (let k = 0; k <= 4; k++) {
+        const v = lo + (hi - lo) * k / 4, y = Y(v);
+        grid += `<line x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#1f2636" stroke-width="1"/><text x="${W - R + 8}" y="${(y + 4).toFixed(1)}" font-size="11" fill="#8b93a7">${coteNum(v, 2)}</text>`;
+      }
+      let xl = '';
+      for (let k = 0; k < 4; k++) {
+        const t = t0 + (t1 - t0) * k / 3;
+        xl += `<text x="${X(t).toFixed(1)}" y="${H - 8}" font-size="11" fill="#8b93a7" text-anchor="${k === 0 ? 'start' : k === 3 ? 'end' : 'middle'}">${coteDate(t)}</text>`;
+      }
+      const ly = pts[pts.length - 1].y;
+      const svg = `<svg id="cote-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${t9['cote-title']} ${ref}" onpointermove="coteMove(event)" onpointerdown="coteMove(event)" onpointerleave="coteLeave()">
+          <defs><linearGradient id="cote-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".35"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+          ${grid}${xl}
+          <path d="${area}" fill="url(#cote-g)"/>
+          <path d="${line}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <line x1="${pts[pts.length - 1].x.toFixed(1)}" x2="${W - R}" y1="${ly.toFixed(1)}" y2="${ly.toFixed(1)}" stroke="${col}" stroke-width="1" stroke-dasharray="3 3"/>
+          <rect x="${W - R + 2}" y="${(ly - 9).toFixed(1)}" width="${R - 4}" height="18" rx="3" fill="${col}"/>
+          <text x="${W - R + 2 + (R - 4) / 2}" y="${(ly + 4).toFixed(1)}" font-size="11" font-weight="700" fill="#0e1118" text-anchor="middle">${coteNum(last.v, 2)}</text>
+          <circle cx="${pts[pts.length - 1].x.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.5" fill="${col}"/>
+          <line id="cote-vl" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="#8b93a7" stroke-width="1" stroke-dasharray="2 3" style="visibility:hidden"/>
+          <circle id="cote-dot" cx="0" cy="0" r="4.5" fill="#0e1118" stroke="${col}" stroke-width="2" style="visibility:hidden"/>
+        </svg><div class="cote-tip" id="cote-tip" hidden></div>`;
+      const stats = `<div class="cote-stats"><span>${t9['cote-low']}<b>${money(sMin)}</b></span><span>${t9['cote-high']}<b>${money(sMax)}</b></span><span>${t9['cote-upd']}<b>${coteDate(all[all.length - 1].t, true)}</b></span></div>`;
+      return `<section class="cote" id="cote-box">${head}<div class="cote-chart">${svg}</div>${stats}${note}</section>`;
+    }
+    function setCoteRange(id, k) { coteRange = k; const b = document.getElementById('cote-box'); if (b) b.outerHTML = coteBox(byId(id)); }
+    function coteMove(e) {
+      const svg = document.getElementById('cote-svg'); if (!svg || !coteState) return;
+      const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * coteState.W;
+      let best = 0, bd = Infinity;
+      coteState.pts.forEach((q, i) => { const d = Math.abs(q.x - px); if (d < bd) { bd = d; best = i; } });
+      const q = coteState.pts[best];
+      const vl = document.getElementById('cote-vl'), dot = document.getElementById('cote-dot'), tip = document.getElementById('cote-tip');
+      vl.setAttribute('x1', q.x); vl.setAttribute('x2', q.x); dot.setAttribute('cx', q.x); dot.setAttribute('cy', q.y);
+      vl.style.visibility = dot.style.visibility = 'visible';
+      tip.innerHTML = `<b>${money(q.v)}</b><span>${coteDate(q.t, true)}</span>`;
+      tip.hidden = false;
+      tip.style.left = Math.min(Math.max(q.x / coteState.W * r.width, 55), r.width - 55) + 'px';
+    }
+    function coteLeave() {
+      ['cote-vl', 'cote-dot'].forEach(i => { const n = document.getElementById(i); if (n) n.style.visibility = 'hidden'; });
+      const tip = document.getElementById('cote-tip'); if (tip) tip.hidden = true;
+    }
+
     function renderProduct(p) {
       const t = p[currentLang];
       const t9 = i18n[currentLang];
@@ -1593,6 +1709,7 @@
             </div>`).join('')}
         </div>
         <p class="zoom-hint">${t9['zoom-hint']}</p>
+        ${coteBox(p)}
         ${mediaBlock(p)}
         <div class="detail-info">
           <div><span class="fun-tag">${t.tag}</span>${p.cond ? `<span class="cond-inline">${t9['cond-' + p.cond] || ''}</span>` : ''}${typeOf(p) === 'premium' ? `<span class="cond-inline" style="background:linear-gradient(135deg,#ffe082,#ffb300);color:#3a2a00">${t9.premium}</span>` : typeOf(p) === 'accessory' ? `<span class="cond-inline" style="background:#b3e5fc;color:#01344d">${t9.accessory}</span>` : ''}${p.articulated ? `<span class="cond-inline" style="background:#d1c4e9;color:#2a1650">${t9.articulated}</span>` : ''}${yearOf(p) ? `<span class="cond-inline" style="background:#fff;color:#1a1a1a">📅 ${t9.edition.replace('{y}', yearOf(p))}</span>` : ''}${soldOut(p) ? `<span class="cond-inline" style="background:#c0392b;color:#fff">${t9.soldout}</span>` : limitedStock(p) ? `<span class="cond-inline" style="background:#e67e22;color:#fff">${t9.limited}</span>` : ''}</div>
